@@ -6,17 +6,23 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 )
 
 func main() {
+	//defining cli flags
 	csvFilename := flag.String("csv", "problems.csv", "a csv file in the format of 'question,answer'")
+	timeLimit := flag.Int("limit", 30, "the time limit for your quiz in seconds")
 
+	//parsing the flags on the cli
 	flag.Parse()
+	//opein the file
 	file, err := os.Open(*csvFilename)
 
 	if err != nil {
 		exit(fmt.Sprintf("failed to open the csv file: %s\n", *csvFilename))
 	}
+
 	// a reader to read the csc file
 	r := csv.NewReader(file)
 
@@ -28,17 +34,38 @@ func main() {
 	//variable to keep track of the correct answers
 	correct := 0
 	problems := parseLine(lines)
+
+	//declare a timer
+	timer := time.NewTimer(time.Duration(*timeLimit) * time.Second)
+
 	for i, prob := range problems {
 		fmt.Printf("problem #%d: %s = \n", i+1, prob.question)
-		var answer string
-		// //using scanf to ensure spaces in input are ignore
-		fmt.Scanf("%s\n", &answer)
-		if answer == prob.answer {
-			correct++
-			fmt.Println("correct!")
-		} else {
-			fmt.Println("incorrect!")
+
+		answerchanel := make(chan string)
+
+		//create and call an anonymous go-routine to accept user input and send the data to answerchannel
+		go func() {
+			var ans string
+			fmt.Scanf("%s\n", &ans)
+			answerchanel <- ans
+		}()
+
+		select {
+		//check cases where the timer is out
+		case <-timer.C:
+			fmt.Printf("time your! \n you scrored %d out of %d.\n", correct, len(problems))
+			return
+
+			//check case where anserchannel has data
+		case ansr := <-answerchanel:
+			if ansr == prob.answer {
+				correct++
+				fmt.Println("correct!")
+			} else {
+				fmt.Println("incorrect!")
+			}
 		}
+
 	}
 	// fmt.Println(lines)
 	fmt.Printf("you scrored %d out of %d.\n", correct, len(problems))
