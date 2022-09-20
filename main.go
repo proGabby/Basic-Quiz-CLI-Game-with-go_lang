@@ -17,13 +17,15 @@ func main() {
 	if err != nil {
 		exit(fmt.Sprintf("failed to open the csv file: %s\n", *csvFilename))
 	}
-
+	// a reader to read the csc file
 	r := csv.NewReader(file)
 
+	//reading all records in the file
 	lines, err := r.ReadAll()
 	if err != nil {
 		exit("faild to manipulate the provided cs file")
 	}
+	//variable to keep track of the correct answers
 	correct := 0
 	problems := parseLine(lines)
 	for i, prob := range problems {
@@ -53,11 +55,15 @@ func exit(msg string) {
 	os.Exit(1)
 }
 
+// iterate through all the record and parse each of them into a problem object
 func parseLine(lines [][]string) []problem {
+	//make a problem slice of problem object with size of lenght of the file record
 	retn := make([]problem, len(lines))
 	for i, line := range lines {
 		retn[i] = problem{
-			question: line[0], answer: strings.TrimSpace(line[1]),
+			question: line[0],
+			//triming the spaces in the answers on the csv file
+			answer: strings.TrimSpace(line[1]),
 		}
 	}
 	return retn
